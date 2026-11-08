@@ -70,9 +70,12 @@ static bool httpGetJson(const char *host, const String &path, JsonDocument &doc)
     http.addHeader("Accept-Encoding", "identity");  // 能不压缩就不压缩
     http.setTimeout(12000);
     int code = http.GET();
+    Serial.printf("[HTTP] https://%s%s -> %d\n", host, path.c_str(), code);
 
     bool ok = false;
     if (code == 200) {
+        String enc = http.header("Content-Encoding");   // HTTPClient 返回 String
+        Serial.printf("[HTTP] 编码=%s 大小=%d\n", enc.length() ? enc.c_str() : "无", http.getSize());
         String enc = http.header("Content-Encoding");   // HTTPClient 返回 String
         if (enc.indexOf("gzip") >= 0) {
             // 和风天气强制 gzip 响应：读原始字节 -> uzlib 解压 -> 再解析 JSON
@@ -106,10 +109,16 @@ static bool httpGetJson(const char *host, const String &path, JsonDocument &doc)
             if (in && got == len && len > 4) {
                 uint8_t *out = nullptr;
                 uint32_t outLen = 0;
-                if (ArduinoUZlib::decompress(in, len, out, outLen) > 0 && out) {
-                    ok = (deserializeJson(doc, out, outLen) == DeserializationError::Ok);
+                int rc = ArduinoUZlib::decompress(in, len, out, outLen);
+                Serial.printf("[HTTP] gzip 原始=%d 读到=%d 解压=%d 字节 (rc=%d)\n", len, got, outLen, rc);
+                if (rc > 0 && out) {
+                    DeserializationError err = deserializeJson(doc, out, outLen);
+                    ok = (err == DeserializationError::Ok);
+                    if (!ok) Serial.printf("[HTTP] JSON解析失败: %s\n", err.c_str());
                     free(out);
                 }
+            } else {
+                Serial.printf("[HTTP] gzip 读取异常: len=%d got=%d\n", len, got);
             }
             free(in);
         } else {
