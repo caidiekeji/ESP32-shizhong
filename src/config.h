@@ -52,5 +52,11 @@
 #define BEMFA_TOPIC_SWITCH    ""
 #define BEMFA_REPORT_MINUTES  5        // 温湿度上报间隔（分钟）
 
+// ---- 板载 RGB 状态灯（WS2812）----
+// N16R8 开发板一般在 GPIO48；灯不亮可试 38 / 21
+#define LED_PIN           48
+#define LED_BRIGHTNESS    20      // 亮度 0-255（彩灯很亮，别调太高）
+#define LED_ON_MS         60000   // 绿灯亮多久后熄灭（毫秒）
+
 // ---- mDNS 访问名：烧录后浏览器访问 http://esp32-clock.local ----
 #define HOSTNAME          "esp32-clock"

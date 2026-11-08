@@ -136,6 +136,7 @@ body.day .city-form input{background:rgba(255,255,255,.55)}
       <input id="cityInput" placeholder="城市，如 上海" maxlength="20">
       <button onclick="setCity('auto')">自动</button>
       <button onclick="setCity()">设置</button>
+      <button onclick="resetWifi()">重置WiFi</button>
     </span>
   </footer>
 </main>
@@ -231,6 +232,11 @@ async function setCity(v){
   try{await fetch('/api/setcity?city='+encodeURIComponent(val));poll()}catch(e){}
 }
 $('cityInput').addEventListener('keydown',e=>{if(e.key==='Enter')setCity()});
+async function resetWifi(){
+  if(!confirm('将清除 WiFi 配置并重启，之后连接热点 ESP32-Clock-Setup（密码 12345678）重新配网。确定？'))return;
+  try{await fetch('/api/resetwifi')}catch(e){}
+  document.body.innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#8ec5ff;font-size:16px">设备重启中… 请稍后连接热点 ESP32-Clock-Setup 重新配网</div>';
+}
 </script>
 </body>
 </html>)HTML";

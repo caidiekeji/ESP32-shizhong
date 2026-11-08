@@ -73,36 +73,33 @@ static bool httpGetJson(const char *host, const String &path, JsonDocument &doc)
 
     bool ok = false;
     if (code == 200) {
-        const char *enc = http.header("Content-Encoding");
-        if (enc && strstr(enc, "gzip")) {
+        String enc = http.header("Content-Encoding");   // HTTPClient 返回 String
+        if (enc.indexOf("gzip") >= 0) {
             // 和风天气强制 gzip 响应：读原始字节 -> uzlib 解压 -> 再解析 JSON
+            WiFiClient *s = http.getStreamPtr();
             int len = http.getSize();
             uint8_t *in = nullptr;
             int got = 0;
-            if (len > 0) {
+            if (len > 0) {                 // 有 Content-Length，按长度读
                 in = (uint8_t *)malloc(len);
-                if (in) got = http.readBytes(in, len);
-            } else {
-                // chunked 分块：循环读完
-                int cap = 2048;
+                if (in && s) got = s->readBytes(in, len);
+            } else if (s) {                // chunked 分块，循环读完
+                int cap = 4096;
                 in = (uint8_t *)malloc(cap);
-                WiFiClient *s = http.getStreamPtr();
                 unsigned long lastData = millis();
-                while (in && s && s->connected()) {
-                    if (s->available()) {
-                        if (got >= cap - 256) {
-                            cap *= 2;
+                while (in && s->connected()) {
+                    int avail = s->available();
+                    if (avail > 0) {
+                        if (got + avail > cap - 64) {
+                            cap = (got + avail + 1024) * 2;
                             uint8_t *nb = (uint8_t *)realloc(in, cap);
                             if (!nb) { free(in); in = nullptr; break; }
                             in = nb;
                         }
-                        got += s->readBytes(in + got, s->available());
+                        got += s->readBytes(in + got, avail);
                         lastData = millis();
-                    } else if (millis() - lastData > 3000) {
-                        break;
-                    } else {
-                        delay(2);
-                    }
+                    } else if (millis() - lastData > 3000) break;
+                    else delay(2);
                 }
                 len = got;
             }

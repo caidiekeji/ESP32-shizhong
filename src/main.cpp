@@ -8,11 +8,12 @@
 #include <ArduinoJson.h>
 #include <Adafruit_AHTX0.h>
 #include <Adafruit_BMP280.h>
-#include <WiFiManager.h>
 
 #include "config.h"
 #include "state.h"
 #include "display.h"
+#include "led.h"
+#include "portal.h"
 #include "weather.h"
 #include "bemfa.h"
 #include "web_pages.h"
@@ -123,10 +124,12 @@ void setup() {
     delay(300);
     Serial.println("\n=== ESP32-S3 智能时钟启动 ===");
 
-    // 持久化设置（"auto" = IP 自动定位）
+    // 状态灯：红灯亮（启动中）
+    ledInit();
+
+    // 持久化设置（"auto" = IP 自动定位，恢复动作在 weatherStart 之后）
     prefs.begin("clock", false);
     String c = prefs.getString("city", "auto");
-    strlcpy(g_city, c.c_str(), sizeof(g_city));
 
     // 传感器
     Wire.begin(I2C_SDA, I2C_SCL);
@@ -146,17 +149,14 @@ void setup() {
     // 屏幕（0.91" SSD1306 128x32，共用 I2C 总线，未接则自动跳过）
     displayInit();
 
-    // WiFi（首次启动自动进入配网热点模式）
-    WiFi.mode(WIFI_STA);
-    WiFi.setHostname(HOSTNAME);
-    WiFiManager wm;
-    wm.setConfigPortalTimeout(180);
-    displayShowMsg("WiFi 配网中…", "热点:ESP32-Clock-Setup");
-    if (!wm.autoConnect(WIFI_AP_NAME, WIFI_AP_PASSWORD)) {
-        Serial.println("[WiFi] 配网超时，重启重试");
+    // WiFi：优先用已保存凭证直连；无凭证/失败则启动中文配网门户（阻塞直到成功）
+    displayShowMsg("连接 WiFi 中", "首次使用请看热点");
+    if (!portalEnsureConnected()) {
+        Serial.println("[WiFi] 配网未完成，重启重试");
         ESP.restart();
     }
     WiFi.setAutoReconnect(true);
+    ledConnected();   // 绿灯：联网成功，LED_ON_MS 后自动熄灭
     Serial.printf("[WiFi] 已连接 %s，IP: %s\n",
                   WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
     displayShowMsg("WiFi 已连接", WiFi.localIP().toString().c_str());
@@ -178,6 +178,17 @@ void setup() {
     server.on("/", HTTP_GET, []() { server.send_P(200, "text/html", INDEX_HTML); });
     server.on("/api/data", HTTP_GET, handleApiData);
     server.on("/api/setcity", HTTP_GET, handleSetCity);
+    // 清除 WiFi 凭证并重启进入配网门户
+    server.on("/api/resetwifi", HTTP_GET, []() {
+        prefs.begin("clock", false);
+        prefs.remove("ssid");
+        prefs.remove("pass");
+        prefs.end();
+        WiFi.disconnect(true, true);
+        server.send(200, "application/json", "{\"ok\":true}");
+        delay(500);
+        ESP.restart();
+    });
     server.onNotFound([]() { server.send(404, "application/json", "{\"error\":\"not found\"}"); });
     server.begin();
 
@@ -193,5 +204,6 @@ void loop() {
         readSensors();
     }
     displayLoop();
+    ledLoop();
     delay(2);
 }
