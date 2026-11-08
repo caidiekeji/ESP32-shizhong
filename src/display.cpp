@@ -2,7 +2,6 @@
 #include "config.h"
 #include "state.h"
 #include "weather.h"
-#include <Wire.h>
 #include <U8g2lib.h>
 #include <time.h>
 

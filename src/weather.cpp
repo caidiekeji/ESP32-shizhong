@@ -4,6 +4,7 @@
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
+#include <ArduinoUZlib.h>
 
 WeatherData g_wx;
 SemaphoreHandle_t wxMutex = nullptr;
@@ -66,14 +67,58 @@ static bool httpGetJson(const char *host, const String &path, JsonDocument &doc)
     String url = String("https://") + host + path;
     if (!http.begin(client, url)) return false;
 
-    http.addHeader("Accept-Encoding", "identity");  // 避免服务器返回 gzip
+    http.addHeader("Accept-Encoding", "identity");  // 能不压缩就不压缩
     http.setTimeout(12000);
     int code = http.GET();
 
     bool ok = false;
     if (code == 200) {
-        String body = http.getString();
-        ok = (deserializeJson(doc, body) == DeserializationError::Ok);
+        const char *enc = http.header("Content-Encoding");
+        if (enc && strstr(enc, "gzip")) {
+            // 和风天气强制 gzip 响应：读原始字节 -> uzlib 解压 -> 再解析 JSON
+            int len = http.getSize();
+            uint8_t *in = nullptr;
+            int got = 0;
+            if (len > 0) {
+                in = (uint8_t *)malloc(len);
+                if (in) got = http.readBytes(in, len);
+            } else {
+                // chunked 分块：循环读完
+                int cap = 2048;
+                in = (uint8_t *)malloc(cap);
+                WiFiClient *s = http.getStreamPtr();
+                unsigned long lastData = millis();
+                while (in && s && s->connected()) {
+                    if (s->available()) {
+                        if (got >= cap - 256) {
+                            cap *= 2;
+                            uint8_t *nb = (uint8_t *)realloc(in, cap);
+                            if (!nb) { free(in); in = nullptr; break; }
+                            in = nb;
+                        }
+                        got += s->readBytes(in + got, s->available());
+                        lastData = millis();
+                    } else if (millis() - lastData > 3000) {
+                        break;
+                    } else {
+                        delay(2);
+                    }
+                }
+                len = got;
+            }
+            if (in && got == len && len > 4) {
+                uint8_t *out = nullptr;
+                uint32_t outLen = 0;
+                if (ArduinoUZlib::decompress(in, len, out, outLen) > 0 && out) {
+                    ok = (deserializeJson(doc, out, outLen) == DeserializationError::Ok);
+                    free(out);
+                }
+            }
+            free(in);
+        } else {
+            String body = http.getString();
+            ok = (deserializeJson(doc, body) == DeserializationError::Ok);
+        }
     }
     http.end();
     return ok;

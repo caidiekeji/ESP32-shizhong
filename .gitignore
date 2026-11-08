@@ -2,4 +2,3 @@
 .vscode/
 *.log
 .tools/
-firmware_out/

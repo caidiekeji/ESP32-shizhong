@@ -32,6 +32,7 @@ jobs:
       - name: 编译固件
         env:
           QWEATHER_KEY: ${{ secrets.QWEATHER_KEY }}
+          BEMFA_UID: ${{ secrets.BEMFA_UID }}
         run: pio run
 
       - name: 上传固件产物
