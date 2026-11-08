@@ -6,6 +6,7 @@
 #include <WebServer.h>
 #include <DNSServer.h>
 #include <Preferences.h>
+#include <ArduinoJson.h>
 
 static WebServer *s_web = nullptr;
 static DNSServer *s_dns = nullptr;
@@ -206,7 +207,7 @@ static void startPortal() {
     s_web->on("/", handleRoot);
     s_web->on("/scan", handleScan);
     s_web->on("/save", HTTP_POST, handleSave);
-    s_web->onNotFound([]() {              // 其余全部重定向（ captive portal 探测路径）
+    s_web->onNotFound([ip]() {            // 其余全部重定向（ captive portal 探测路径）
         s_web->sendHeader("Location", String("http://") + ip.toString(), true);
         s_web->send(302, "text/plain", "");
     });
