@@ -122,7 +122,10 @@ static bool httpGetJson(const char *host, const String &path, JsonDocument &doc)
             free(in);
         } else {
             String body = http.getString();
-            ok = (deserializeJson(doc, body) == DeserializationError::Ok);
+            Serial.printf("[HTTP] 明文 %d 字节: %.140s\n", body.length(), body.c_str());
+            DeserializationError err = deserializeJson(doc, body);
+            ok = (err == DeserializationError::Ok);
+            if (!ok) Serial.printf("[HTTP] JSON解析失败: %s\n", err.c_str());
         }
     }
     http.end();
@@ -196,6 +199,8 @@ static void refreshWeather() {
 
     bool okN = httpGetJson(QWEATHER_API_HOST, p1, docNow) && docNow["code"].as<int>() == 200;
     bool okD = httpGetJson(QWEATHER_API_HOST, p2, docDaily) && docDaily["code"].as<int>() == 200;
+    Serial.printf("[天气] okN=%d codeN=%d | okD=%d codeD=%d\n",
+                  okN, docNow["code"].as<int>(), okD, docDaily["code"].as<int>());
     if (!okN && !okD) {
         Serial.println("[天气] 拉取失败");
         return;
