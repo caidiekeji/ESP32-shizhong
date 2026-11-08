@@ -76,7 +76,6 @@ static bool httpGetJson(const char *host, const String &path, JsonDocument &doc)
     if (code == 200) {
         String enc = http.header("Content-Encoding");   // HTTPClient 返回 String
         Serial.printf("[HTTP] 编码=%s 大小=%d\n", enc.length() ? enc.c_str() : "无", http.getSize());
-        String enc = http.header("Content-Encoding");   // HTTPClient 返回 String
         if (enc.indexOf("gzip") >= 0) {
             // 和风天气强制 gzip 响应：读原始字节 -> uzlib 解压 -> 再解析 JSON
             WiFiClient *s = http.getStreamPtr();
