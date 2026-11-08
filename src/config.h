@@ -38,5 +38,19 @@
 #define WEATHER_UPDATE_MINUTES  20      // 天气刷新间隔（分钟）
 #define SENSOR_UPDATE_MS        5000    // 传感器采集间隔（毫秒）
 
+// ---- 巴法云（接入米家/小爱同学，不需要则留空）----
+// 注册 https://cloud.bemfa.com ，控制台首页复制"私钥"
+// GitHub 编译：仓库 Secrets 添加 BEMFA_UID；本地编译：set BEMFA_UID=你的私钥
+#ifndef BEMFA_UID
+#define BEMFA_UID ""
+#endif
+#define BEMFA_HOST            "bemfa.com"
+#define BEMFA_PORT            9501
+// 温湿度传感器主题（MQTT设备云创建，尾号须为 004），上报格式 #温度#湿度#
+#define BEMFA_TOPIC_SENSOR    "fl9nwZI7L004"
+// 屏幕开关主题（尾号须为 001），留空则不启用"小爱同学，打开/关闭时钟屏幕"
+#define BEMFA_TOPIC_SWITCH    ""
+#define BEMFA_REPORT_MINUTES  5        // 温湿度上报间隔（分钟）
+
 // ---- mDNS 访问名：烧录后浏览器访问 http://esp32-clock.local ----
 #define HOSTNAME          "esp32-clock"

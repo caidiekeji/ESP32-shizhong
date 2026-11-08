@@ -8,6 +8,7 @@
 // 128x32 SSD1306，硬件 I2C（setup 中已 Wire.begin(SDA,SCL)，S3 默认即 8/9）
 static U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 static bool s_ok = false;
+static bool s_enabled = true;
 static unsigned long s_lastDraw = 0, s_lastPage = 0;
 static uint8_t s_page = 0;
 
@@ -29,6 +30,18 @@ bool displayInit() {
 }
 
 bool displayOK() { return s_ok; }
+
+void displaySetEnabled(bool on) {
+    if (!s_ok || s_enabled == on) return;
+    s_enabled = on;
+    if (on) {
+        u8g2.setPowerSave(0);   // 点亮面板
+        s_lastDraw = 0;         // 立即重绘
+    } else {
+        u8g2.setPowerSave(1);   // SSD1306 进睡眠
+    }
+    Serial.printf("[屏幕] %s\n", on ? "开" : "关");
+}
 
 void displayShowMsg(const char *l1, const char *l2) {
     if (!s_ok) return;
@@ -103,7 +116,7 @@ static void draw() {
 }
 
 void displayLoop() {
-    if (!s_ok) return;
+    if (!s_ok || !s_enabled) return;
     unsigned long ms = millis();
     if (ms - s_lastDraw < 1000) return;
     s_lastDraw = ms;

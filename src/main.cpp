@@ -14,6 +14,7 @@
 #include "state.h"
 #include "display.h"
 #include "weather.h"
+#include "bemfa.h"
 #include "web_pages.h"
 
 WebServer server(80);
@@ -169,6 +170,9 @@ void setup() {
     // 天气后台任务（先创建互斥锁，再恢复城市设置）
     weatherStart();
     weatherSetCity(c);
+
+    // 巴法云 MQTT（米家/小爱同学）
+    bemfaStart();
 
     // HTTP 路由
     server.on("/", HTTP_GET, []() { server.send_P(200, "text/html", INDEX_HTML); });
