@@ -123,10 +123,9 @@ void setup() {
     delay(300);
     Serial.println("\n=== ESP32-S3 智能时钟启动 ===");
 
-    // 持久化设置（"auto" = IP 自动定位）
+    // 持久化设置（"auto" = IP 自动定位，恢复动作在 weatherStart 之后）
     prefs.begin("clock", false);
     String c = prefs.getString("city", "auto");
-    strlcpy(g_city, c.c_str(), sizeof(g_city));
 
     // 传感器
     Wire.begin(I2C_SDA, I2C_SCL);
