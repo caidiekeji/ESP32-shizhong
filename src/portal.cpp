@@ -245,6 +245,24 @@ bool portalEnsureConnected() {
         while (WiFi.status() != WL_CONNECTED && millis() - t0 < 15000) delay(100);
         if (WiFi.status() == WL_CONNECTED) return true;
         Serial.println("[WiFi] 连接失败，进入配网门户");
+    } else {
+        // 兼容旧固件（WiFiManager 时代）：ESP32 内部 NVS 里可能还留着凭证，
+        // 尝试空参直连；成功则迁移到自己的存储，下次开机秒连
+        WiFi.mode(WIFI_STA);
+        WiFi.setHostname(HOSTNAME);
+        WiFi.begin();
+        Serial.println("[WiFi] 尝试迁移旧固件保存的 WiFi…");
+        unsigned long t0 = millis();
+        while (WiFi.status() != WL_CONNECTED && millis() - t0 < 12000) delay(100);
+        if (WiFi.status() == WL_CONNECTED) {
+            s_prefs.begin("clock", false);
+            s_prefs.putString("ssid", WiFi.SSID());
+            s_prefs.putString("pass", WiFi.psk());
+            s_prefs.end();
+            Serial.printf("[WiFi] 迁移成功: %s\n", WiFi.SSID().c_str());
+            return true;
+        }
+        Serial.println("[WiFi] 无可用凭证，进入配网门户");
     }
     startPortal();
     return WiFi.status() == WL_CONNECTED;
