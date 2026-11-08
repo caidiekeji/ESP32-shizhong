@@ -13,6 +13,7 @@
 #include "config.h"
 #include "state.h"
 #include "display.h"
+#include "led.h"
 #include "weather.h"
 #include "bemfa.h"
 #include "web_pages.h"
@@ -123,6 +124,9 @@ void setup() {
     delay(300);
     Serial.println("\n=== ESP32-S3 智能时钟启动 ===");
 
+    // 状态灯：红灯亮（启动中）
+    ledInit();
+
     // 持久化设置（"auto" = IP 自动定位，恢复动作在 weatherStart 之后）
     prefs.begin("clock", false);
     String c = prefs.getString("city", "auto");
@@ -156,6 +160,7 @@ void setup() {
         ESP.restart();
     }
     WiFi.setAutoReconnect(true);
+    ledConnected();   // 绿灯：联网成功，LED_ON_MS 后自动熄灭
     Serial.printf("[WiFi] 已连接 %s，IP: %s\n",
                   WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
     displayShowMsg("WiFi 已连接", WiFi.localIP().toString().c_str());
@@ -192,5 +197,6 @@ void loop() {
         readSensors();
     }
     displayLoop();
+    ledLoop();
     delay(2);
 }
