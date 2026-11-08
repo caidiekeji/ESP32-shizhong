@@ -38,5 +38,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: firmware
-          path: .pio/build/esp32-clock/firmware.bin
+          path: |
+            .pio/build/esp32-clock/bootloader.bin
+            .pio/build/esp32-clock/partitions.bin
+            .pio/build/esp32-clock/firmware.bin
           if-no-files-found: error
