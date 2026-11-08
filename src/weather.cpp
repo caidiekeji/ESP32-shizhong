@@ -209,12 +209,13 @@ static void refreshWeather() {
             JsonObject n = docNow["now"];
             strlcpy(g_wx.text,    (const char*)(n["text"]    | "--"), sizeof(g_wx.text));
             strlcpy(g_wx.windDir, (const char*)(n["windDir"] | ""),   sizeof(g_wx.windDir));
-            g_wx.icon      = n["icon"]      | 0;
-            g_wx.temp      = n["temp"]      | 0.0f;
-            g_wx.feels     = n["feelsLike"] | 0.0f;
-            g_wx.hum       = n["humidity"]  | 0.0f;
-            g_wx.pressure  = n["pressure"]  | 0.0f;
-            g_wx.windScale = n["windScale"] | 0;
+            // 和风数值字段为字符串（如 "16"），需显式转换
+            g_wx.icon      = n["icon"].as<int>();
+            g_wx.temp      = n["temp"].as<float>();
+            g_wx.feels     = n["feelsLike"].as<float>();
+            g_wx.hum       = n["humidity"].as<float>();
+            g_wx.pressure  = n["pressure"].as<float>();
+            g_wx.windScale = n["windScale"].as<int>();
             g_wx.updated   = time(nullptr);
             g_wx.valid     = true;
         }
@@ -224,9 +225,9 @@ static void refreshWeather() {
                 if (i >= 3) break;
                 strlcpy(g_wx.fc[i].date, (const char*)(d["fxDate"]  | ""),   sizeof(g_wx.fc[i].date));
                 strlcpy(g_wx.fc[i].text, (const char*)(d["textDay"] | "--"), sizeof(g_wx.fc[i].text));
-                g_wx.fc[i].icon = d["iconDay"] | 0;
-                g_wx.fc[i].tmax = d["tempMax"] | 0;
-                g_wx.fc[i].tmin = d["tempMin"] | 0;
+                g_wx.fc[i].icon = d["iconDay"].as<int>();
+                g_wx.fc[i].tmax = d["tempMax"].as<int>();
+                g_wx.fc[i].tmin = d["tempMin"].as<int>();
                 i++;
             }
             g_wx.fcCount = i;
