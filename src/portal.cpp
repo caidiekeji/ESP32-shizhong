@@ -152,6 +152,7 @@ static void handleSave() {
         return;
     }
     Serial.printf("[配网] 尝试连接: %s\n", ssid.c_str());
+    WiFi.setTxPower(WIFI_POWER_11dBm);   // 降低发射功率，减轻 LDO 电流尖峰
     WiFi.begin(ssid.c_str(), pass.c_str());
     unsigned long t0 = millis();
     while (WiFi.status() != WL_CONNECTED && millis() - t0 < 20000) delay(100);
@@ -196,6 +197,7 @@ static void teardownPortal() {
 
 static void startPortal() {
     WiFi.mode(WIFI_AP_STA);
+    WiFi.setTxPower(WIFI_POWER_11dBm);   // 降低发射功率，减轻 LDO 电流尖峰
     WiFi.setHostname(HOSTNAME);
     WiFi.softAP(WIFI_AP_NAME, WIFI_AP_PASSWORD);
     IPAddress ip = WiFi.softAPIP();
@@ -238,6 +240,7 @@ bool portalEnsureConnected() {
 
     if (ssid.length()) {
         WiFi.mode(WIFI_STA);
+        WiFi.setTxPower(WIFI_POWER_11dBm);   // 降低发射功率，减轻 LDO 电流尖峰
         WiFi.setHostname(HOSTNAME);
         WiFi.begin(ssid.c_str(), pass.c_str());
         Serial.printf("[WiFi] 使用已保存凭证连接: %s\n", ssid.c_str());
@@ -249,6 +252,7 @@ bool portalEnsureConnected() {
         // 兼容旧固件（WiFiManager 时代）：ESP32 内部 NVS 里可能还留着凭证，
         // 尝试空参直连；成功则迁移到自己的存储，下次开机秒连
         WiFi.mode(WIFI_STA);
+        WiFi.setTxPower(WIFI_POWER_11dBm);   // 降低发射功率，减轻 LDO 电流尖峰
         WiFi.setHostname(HOSTNAME);
         WiFi.begin();
         Serial.println("[WiFi] 尝试迁移旧固件保存的 WiFi…");
