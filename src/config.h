@@ -12,8 +12,10 @@
 
 // ---- 传感器 I2C 地址 ----
 // AHT20 固定 0x38；BMP280 模块 SDO 接 GND 为 0x76，接 VCC 为 0x77
+// 4 针模块（VDD/SDA/GND/SCL）SDO 已在板上固定，两种地址都常见，固件逐个探测
 #define AHT20_ADDR       0x38
 #define BMP280_ADDR      0x76
+#define BMP280_ADDR_ALT  0x77
 
 // ---- 时间 ----
 #define TZ_INFO          "CST-8"   // 中国标准时间 UTC+8

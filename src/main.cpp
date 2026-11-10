@@ -134,7 +134,8 @@ void setup() {
     // 传感器
     Wire.begin(I2C_SDA, I2C_SCL);
     indoor.ahtOK = aht.begin(&Wire);
-    indoor.bmpOK = bmp.begin(BMP280_ADDR);
+    // 两种常见地址都试一遍，兼容 SDO 接法不同的 4 针模块
+    indoor.bmpOK = bmp.begin(BMP280_ADDR) || bmp.begin(BMP280_ADDR_ALT);
     if (indoor.bmpOK) {
         bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,
                         Adafruit_BMP280::SAMPLING_X1,   // 温度过采样
